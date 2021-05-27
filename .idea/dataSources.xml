@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
+    <data-source source="LOCAL" name="Django default" uuid="9f28f226-a852-4807-acb6-8d31ee104356">
+      <driver-ref>postgresql</driver-ref>
+      <synchronize>true</synchronize>
+      <imported>true</imported>
+      <remarks>$PROJECT_DIR$/faceval_django_service/settings.py</remarks>
+      <jdbc-driver>org.postgresql.Driver</jdbc-driver>
+      <jdbc-url>jdbc:postgresql://127.0.0.1:9029/faceval_postgres</jdbc-url>
+      <working-dir>$ProjectFileDir$</working-dir>
+    </data-source>
+  </component>
+</project>
