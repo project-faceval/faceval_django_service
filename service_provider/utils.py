@@ -6,6 +6,9 @@ from django.db import models
 import uuid
 from pathlib import Path
 import os
+from PIL import Image
+from io import BytesIO
+import base64
 
 
 class ModelEncoderAdapter(DjangoJSONEncoder):
@@ -32,31 +35,20 @@ def get_photo_info(photo):
     if not isinstance(photo, Iterable):
         photo = [photo]
 
-    info = []
-
     for p in photo:
-        info.append({
+        yield {
             "id": p.id,
-            "path": p.path,
+            "base": p.image,
             "score": p.score,
             "face_positions": p.face_positions,
             "title": p.title,
             "description": p.description,
             "date_added": p.date_added,
             "tag": p.tag,
-        })
-
-    size = len(info)
-
-    if size <= 0:
-        return None
-    elif size == 1:
-        return info[0]
-    else:
-        return info
+        }
 
 
-def optional_update(old_data, new_data, keep_pattern="||%%KEEP_FORMAL%%||",
+def optional_update(old_data, new_data, keep_pattern="||%%USE_PREVIOUS%%||",
                     keep_if_none=True,
                     empty_str_to_none=False,
                     skip_empty_str=False,
@@ -76,7 +68,8 @@ def optional_update(old_data, new_data, keep_pattern="||%%KEEP_FORMAL%%||",
     return new_data
 
 
-image_path = Path(os.path.dirname(__file__)).parent.resolve() / 'static' / 'images'
+# image_path = Path(os.path.dirname(__file__)).parent.resolve() / 'static' / 'images'
+image_path = Path('/tmp') / 'faceval' / 'images'
 
 
 def get_uuid():
@@ -87,12 +80,31 @@ def save_image(multipart_file, ext):
     file_name = f"{get_uuid()}.{ext}"
     path = image_path / file_name
 
+    if not image_path.exists():
+        os.makedirs(image_path)
+
     with open(path, 'wb+') as f:
         for chunk in multipart_file.chunks():
             f.write(chunk)
 
-    return file_name
+    return path
 
 
 def remove_image(file_name):
     os.remove(image_path / file_name)
+
+
+def encode_image(multipart_file, ext):
+    path = save_image(multipart_file, ext)
+
+    image = Image.open(path)
+
+    buffer = BytesIO()
+    image.save(buffer, format=ext)
+
+    base64_code = base64.b64encode(buffer.getvalue())
+
+    image.close()
+    os.remove(path)
+
+    return str(base64_code)

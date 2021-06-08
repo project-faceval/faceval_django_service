@@ -10,7 +10,7 @@ from django.contrib.auth.models import User
 from service_provider.rest.handlers import RestRequestHandler
 from service_provider.models import PhotoBlog, Profile
 from service_provider.forms import PhotoBlogForm, PhotoUpdateForm, PhotoValidationForm, PhotoDeleteForm
-from service_provider.utils import save_image, get_photo_info, optional_update, remove_image
+from service_provider.utils import save_image, get_photo_info, optional_update, remove_image, encode_image
 
 
 class PhotoBlogViewSet(RestRequestHandler):
@@ -26,8 +26,8 @@ class PhotoBlogViewSet(RestRequestHandler):
             return HttpResponse(status=http.client.BAD_REQUEST)
 
         if photo_id is not None:
-            return JsonResponse(get_photo_info(PhotoBlog.objects.exclude(tag__regex=r'^.*D.*$')
-                                                                .get(id=photo_id)), safe=False)
+            return JsonResponse([*get_photo_info(PhotoBlog.objects.exclude(tag__regex=r'^.*D.*$')
+                                                                  .get(id=photo_id))], safe=False)
         else:
             try:
                 profile = Profile.objects.get(user=User.objects.get(username=user_id))
@@ -54,20 +54,17 @@ class PhotoBlogViewSet(RestRequestHandler):
             return HttpResponse(status=http.client.FORBIDDEN)
 
         with transaction.atomic():
-            file_name = save_image(form.cleaned_data['image'], form.cleaned_data['ext'])
-            try:
-                new_blog = PhotoBlog.objects.create(user=profile,
-                                                    score=form.cleaned_data.get('score'),
-                                                    face_positions=form.cleaned_data['positions'],
-                                                    title=form.cleaned_data.get('title'),
-                                                    description=form.cleaned_data.get('description'),
-                                                    path=file_name)
-                new_blog.save()
-            except Exception as e:
-                remove_image(file_name)
-                raise e
+            base64_code = encode_image(form.cleaned_data['image'], form.cleaned_data['ext'])
+            new_blog = PhotoBlog.objects.create(user=profile,
+                                                score=form.cleaned_data.get('score'),
+                                                face_positions=form.cleaned_data['positions'],
+                                                title=form.cleaned_data.get('title'),
+                                                description=form.cleaned_data.get('description'),
+                                                path="",
+                                                image=base64_code)
+            new_blog.save()
 
-        return JsonResponse(get_photo_info(new_blog), safe=False, status=http.client.CREATED)
+        return JsonResponse([*get_photo_info(new_blog)][0], safe=False, status=http.client.CREATED)
 
     def put(self, request, *args, **kwargs):
         form = PhotoUpdateForm(request.GET)
@@ -93,7 +90,7 @@ class PhotoBlogViewSet(RestRequestHandler):
                                            strip_string=False)
 
         blog.save()
-        return JsonResponse(get_photo_info(blog), safe=False)
+        return JsonResponse([*get_photo_info(blog)][0], safe=False)
 
     def delete(self, request, *args, **kwargs):
         form = PhotoDeleteForm(request.GET)
@@ -106,7 +103,7 @@ class PhotoBlogViewSet(RestRequestHandler):
 
         blog = PhotoBlog.objects.get(id=form.cleaned_data['photo_id'])
 
-        if not user.is_superuser and blog.user != user:
+        if not user.is_superuser and blog.user.user.id != user.id:
             return HttpResponse(status=http.client.FORBIDDEN)
 
         fake_delete = not user.is_superuser or form.cleaned_data.get('fake_delete')

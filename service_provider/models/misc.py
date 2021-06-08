@@ -29,6 +29,7 @@ class MLModel(DateTimeRecordModel, TagContainedModel, FileSystemRelatedModel):
 class PhotoBlog(DateTimeRecordModel, TagContainedModel, FileSystemRelatedModel):
     id = models.BigAutoField(primary_key=True)
     user = models.ForeignKey(Profile, null=True, on_delete=models.SET_NULL)
+    image = models.TextField(null=False)
     trained = models.BooleanField(null=False, default=False)
     score = models.FloatField(null=True)
     face_positions = models.TextField()
