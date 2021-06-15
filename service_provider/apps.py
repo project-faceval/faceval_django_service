@@ -32,4 +32,5 @@ class ServiceProviderConfig(AppConfig):
     def ready(self):
         eureka_client.init(eureka_availability_zones=ZONES, zone=ZONE,
                            app_name=SERVICE_NAME,
+                           instance_ip=get_ip(),
                            instance_port=get_port())

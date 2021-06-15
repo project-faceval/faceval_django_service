@@ -4,6 +4,7 @@ from django.db import transaction
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from django.contrib.auth.models import User
+import json
 
 from service_provider.rest.handlers import RestRequestHandler, HttpResponse
 from service_provider.models import Profile
@@ -37,7 +38,10 @@ class UserInfoViewSet(RestRequestHandler):
                 return JsonResponse(get_user_info(profile, user), safe=False)
 
     def post(self, request, *args, **kwargs):
-        form = forms.MinimalUserForm(request.POST)
+        if request.content_type == 'application/json':
+            form = forms.MinimalUserForm(json.loads(request.body))
+        else:
+            form = forms.MinimalUserForm(request.POST)
         if not form.is_valid():
             return HttpResponse(status=http.client.BAD_REQUEST)
 
@@ -51,7 +55,10 @@ class UserInfoViewSet(RestRequestHandler):
         return JsonResponse(get_user_info(profile, new_user), safe=False, status=http.client.CREATED)
 
     def put(self, request, *args, **kwargs):
-        form = forms.FullUserForm(request.GET)
+        if request.content_type == 'application/json':
+            form = forms.FullUserForm(json.loads(request.body))
+        else:
+            form = forms.FullUserForm(request.GET)
         if not form.is_valid():
             return HttpResponse(status=http.client.BAD_REQUEST)
 

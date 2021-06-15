@@ -53,6 +53,15 @@ class PhotoBlogForm(UserAuthenticationForm):
     positions = forms.CharField(required=True)
 
 
+class PhotoBlogFormBase64(UserAuthenticationForm):
+    title = forms.CharField(max_length=300, required=False)
+    description = forms.CharField(required=False)
+    image = forms.CharField(required=True)
+    ext = forms.CharField(required=True)
+    score = forms.FloatField(required=False)
+    positions = forms.CharField(required=True)
+
+
 class PhotoValidationForm(UserAuthenticationForm):
     photo_id = forms.IntegerField(required=True)
 

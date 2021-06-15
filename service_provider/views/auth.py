@@ -3,6 +3,7 @@ import http.client
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
+import json
 
 from service_provider.rest.handlers import RestRequestHandler, HttpResponse
 from service_provider import forms
@@ -14,7 +15,10 @@ class AuthenticationViewSet(RestRequestHandler):
         return super().rest_view(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        form = forms.UserAuthenticationForm(request.POST)
+        if request.content_type == 'application/json':
+            form = forms.UserAuthenticationForm(json.loads(request.body))
+        else:
+            form = forms.UserAuthenticationForm(request.POST)
         if not form.is_valid():
             return HttpResponse(status=http.client.BAD_REQUEST)
 

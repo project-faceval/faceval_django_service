@@ -9,7 +9,7 @@ from django.contrib.auth.models import User
 
 from service_provider.rest.handlers import RestRequestHandler
 from service_provider.models import PhotoBlog, Profile
-from service_provider.forms import PhotoBlogForm, PhotoUpdateForm, PhotoValidationForm, PhotoDeleteForm
+from service_provider.forms import PhotoBlogForm, PhotoBlogFormBase64, PhotoUpdateForm, PhotoValidationForm, PhotoDeleteForm
 from service_provider.utils import save_image, get_photo_info, optional_update, remove_image, encode_image
 
 
@@ -26,8 +26,11 @@ class PhotoBlogViewSet(RestRequestHandler):
             return HttpResponse(status=http.client.BAD_REQUEST)
 
         if photo_id is not None:
-            return JsonResponse([*get_photo_info(PhotoBlog.objects.exclude(tag__regex=r'^.*D.*$')
-                                                                  .get(id=photo_id))], safe=False)
+            try:
+                return JsonResponse([*get_photo_info(PhotoBlog.objects.exclude(tag__regex=r'^.*D.*$')
+                                                                      .get(id=photo_id))], safe=False)
+            except PhotoBlog.DoesNotExist:
+                return HttpResponse(status=http.client.NOT_FOUND)
         else:
             try:
                 profile = Profile.objects.get(user=User.objects.get(username=user_id))
@@ -40,7 +43,14 @@ class PhotoBlogViewSet(RestRequestHandler):
                                                               .all())], safe=False)
 
     def post(self, request, *args, **kwargs):
-        form = PhotoBlogForm(request.POST, request.FILES)
+        use_base64 = request.get("use_base64")
+        use_base64 = use_base64 is not None and use_base64 == 'yes'
+
+        if use_base64:
+            form = PhotoBlogFormBase64(request.POST)
+        else:
+            form = PhotoBlogForm(request.POST, request.FILES)
+
         if not form.is_valid():
             return HttpResponse(status=http.client.BAD_REQUEST)
 
@@ -54,7 +64,10 @@ class PhotoBlogViewSet(RestRequestHandler):
             return HttpResponse(status=http.client.FORBIDDEN)
 
         with transaction.atomic():
-            base64_code = encode_image(form.cleaned_data['image'], form.cleaned_data['ext'])
+            if use_base64:
+                base64_code = form.cleaned_data['image']
+            else:
+                base64_code = encode_image(form.cleaned_data['image'], form.cleaned_data['ext'])
             new_blog = PhotoBlog.objects.create(user=profile,
                                                 score=form.cleaned_data.get('score'),
                                                 face_positions=form.cleaned_data['positions'],
