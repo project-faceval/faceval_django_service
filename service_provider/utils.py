@@ -41,7 +41,7 @@ def get_photo_info(photo):
             "id": p.id,
             "base": p.image,
             "score": p.score,
-            "face_positions": p.face_positions,
+            "positions": p.face_positions,
             "title": p.title,
             "description": p.description,
             "date_added": p.date_added,
@@ -113,7 +113,7 @@ def encode_image(multipart_file, ext):
 
 def json_request_compat(request, method="GET"):
     if request.content_type == 'application/json':
-        return json.load(request.body)
+        return json.loads(request.body)
 
     if method == "POST":
         return request.POST
