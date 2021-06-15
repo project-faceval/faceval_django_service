@@ -1,4 +1,5 @@
 from typing import Iterable
+import json
 
 from django.core.serializers import serialize
 from django.core.serializers.json import DjangoJSONEncoder
@@ -108,3 +109,13 @@ def encode_image(multipart_file, ext):
     os.remove(path)
 
     return str(base64_code)
+
+
+def json_request_compat(request, method="GET"):
+    if request.content_type == 'application/json':
+        return json.load(request.body)
+
+    if method == "POST":
+        return request.POST
+    else:
+        return request.GET

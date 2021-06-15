@@ -1,5 +1,6 @@
 import http.client
 from collections import defaultdict
+import json
 
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
@@ -9,8 +10,10 @@ from django.contrib.auth.models import User
 
 from service_provider.rest.handlers import RestRequestHandler
 from service_provider.models import PhotoBlog, Profile
-from service_provider.forms import PhotoBlogForm, PhotoBlogFormBase64, PhotoUpdateForm, PhotoValidationForm, PhotoDeleteForm
-from service_provider.utils import save_image, get_photo_info, optional_update, remove_image, encode_image
+from service_provider.forms import PhotoBlogForm, PhotoBlogFormBase64, PhotoUpdateForm, PhotoValidationForm,\
+                                    PhotoDeleteForm
+from service_provider.utils import save_image, get_photo_info, optional_update,\
+                                    remove_image, encode_image, json_request_compat
 
 
 class PhotoBlogViewSet(RestRequestHandler):
@@ -43,13 +46,16 @@ class PhotoBlogViewSet(RestRequestHandler):
                                                               .all())], safe=False)
 
     def post(self, request, *args, **kwargs):
-        use_base64 = request.get("use_base64")
+        params = json_request_compat(request, method='POST')
+
+        use_base64 = params.get("use_base64")
+
         use_base64 = use_base64 is not None and use_base64 == 'yes'
 
         if use_base64:
-            form = PhotoBlogFormBase64(request.POST)
+            form = PhotoBlogFormBase64(params)
         else:
-            form = PhotoBlogForm(request.POST, request.FILES)
+            form = PhotoBlogForm(params, request.FILES)
 
         if not form.is_valid():
             return HttpResponse(status=http.client.BAD_REQUEST)
@@ -80,7 +86,9 @@ class PhotoBlogViewSet(RestRequestHandler):
         return JsonResponse([*get_photo_info(new_blog)][0], safe=False, status=http.client.CREATED)
 
     def put(self, request, *args, **kwargs):
-        form = PhotoUpdateForm(request.GET)
+        params = json_request_compat(request)
+
+        form = PhotoUpdateForm(params)
         if not form.is_valid():
             return HttpResponse(status=http.client.BAD_REQUEST)
 
@@ -106,7 +114,9 @@ class PhotoBlogViewSet(RestRequestHandler):
         return JsonResponse([*get_photo_info(blog)][0], safe=False)
 
     def delete(self, request, *args, **kwargs):
-        form = PhotoDeleteForm(request.GET)
+        params = request.GET
+
+        form = PhotoDeleteForm(params)
         if not form.is_valid():
             return HttpResponse(status=http.client.BAD_REQUEST)
 

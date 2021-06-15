@@ -9,7 +9,7 @@ import json
 from service_provider.rest.handlers import RestRequestHandler, HttpResponse
 from service_provider.models import Profile
 from service_provider import forms
-from service_provider.utils import get_user_info, optional_update
+from service_provider.utils import get_user_info, optional_update, json_request_compat
 
 
 class UserInfoViewSet(RestRequestHandler):
@@ -38,10 +38,9 @@ class UserInfoViewSet(RestRequestHandler):
                 return JsonResponse(get_user_info(profile, user), safe=False)
 
     def post(self, request, *args, **kwargs):
-        if request.content_type == 'application/json':
-            form = forms.MinimalUserForm(json.loads(request.body))
-        else:
-            form = forms.MinimalUserForm(request.POST)
+        params = json_request_compat(request, method="POST")
+
+        form = forms.MinimalUserForm(params)
         if not form.is_valid():
             return HttpResponse(status=http.client.BAD_REQUEST)
 
@@ -55,10 +54,9 @@ class UserInfoViewSet(RestRequestHandler):
         return JsonResponse(get_user_info(profile, new_user), safe=False, status=http.client.CREATED)
 
     def put(self, request, *args, **kwargs):
-        if request.content_type == 'application/json':
-            form = forms.FullUserForm(json.loads(request.body))
-        else:
-            form = forms.FullUserForm(request.GET)
+        params = json_request_compat(request)
+
+        form = forms.FullUserForm(params)
         if not form.is_valid():
             return HttpResponse(status=http.client.BAD_REQUEST)
 
