@@ -7,6 +7,7 @@ import json
 
 from service_provider.rest.handlers import RestRequestHandler, HttpResponse
 from service_provider import forms
+from service_provider.utils import json_request_compat
 
 
 class AuthenticationViewSet(RestRequestHandler):
@@ -15,10 +16,9 @@ class AuthenticationViewSet(RestRequestHandler):
         return super().rest_view(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        if request.content_type == 'application/json':
-            form = forms.UserAuthenticationForm(json.loads(request.body))
-        else:
-            form = forms.UserAuthenticationForm(request.POST)
+        params = json_request_compat(request, method='POST')
+
+        form = forms.UserAuthenticationForm(params)
         if not form.is_valid():
             return HttpResponse(status=http.client.BAD_REQUEST)
 
