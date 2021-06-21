@@ -28,6 +28,7 @@ class ServiceProviderConfig(AppConfig):
 
     verbose_name = 'FACEVAL Service Provider using Django'
     default = True
+    version = "1.4.0-MAINLINE"
 
     def ready(self):
         eureka_client.init(eureka_availability_zones=ZONES, zone=ZONE,

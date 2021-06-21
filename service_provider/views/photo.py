@@ -16,6 +16,16 @@ from service_provider.utils import save_image, get_photo_info, optional_update,\
                                     remove_image, encode_image, json_request_compat
 
 
+def get_attach_base(request):
+    attach_base = request.GET.get("attach_base")
+    return True if attach_base is not None and str(attach_base).lower() == 'true' else False
+
+
+def get_save_thumbnail(request):
+    ut = request.GET.get("save_thumbnail")
+    return True if ut is not None and str(ut).lower() == 'true' else False
+
+
 class PhotoBlogViewSet(RestRequestHandler):
     @csrf_exempt
     def rest_view(self, request, *args, **kwargs):
@@ -25,13 +35,15 @@ class PhotoBlogViewSet(RestRequestHandler):
         photo_id = request.GET.get("id")
         user_id = request.GET.get("user_id")
 
+        attach_base = get_attach_base(request)
+
         if photo_id is None and user_id is None:
             return HttpResponse(status=http.client.BAD_REQUEST)
 
         if photo_id is not None:
             try:
                 return JsonResponse([*get_photo_info(PhotoBlog.objects.exclude(tag__regex=r'^.*D.*$')
-                                                                      .get(id=photo_id))], safe=False)
+                                                                      .get(id=photo_id), attach_base)], safe=False)
             except PhotoBlog.DoesNotExist:
                 return HttpResponse(status=http.client.NOT_FOUND)
         else:
@@ -43,14 +55,16 @@ class PhotoBlogViewSet(RestRequestHandler):
                 return JsonResponse([*get_photo_info(PhotoBlog.objects
                                                               .filter(user=profile)
                                                               .exclude(tag__regex=r'^.*D.*$')
-                                                              .all())], safe=False)
+                                                              .all(), attach_base)], safe=False)
 
     def post(self, request, *args, **kwargs):
         params = json_request_compat(request, method='POST')
 
         use_base64 = params.get("use_base64")
-
         use_base64 = use_base64 is not None and use_base64 == 'yes'
+
+        attach_base = get_attach_base(request)
+        save_thumbnail = get_save_thumbnail(request)
 
         if use_base64:
             form = PhotoBlogFormBase64(params)
@@ -73,7 +87,7 @@ class PhotoBlogViewSet(RestRequestHandler):
             if use_base64:
                 base64_code = form.cleaned_data['image']
             else:
-                base64_code = encode_image(form.cleaned_data['image'], form.cleaned_data['ext'])
+                base64_code = encode_image(form.cleaned_data['image'], form.cleaned_data['ext'], save_thumbnail)
             new_blog = PhotoBlog.objects.create(user=profile,
                                                 score=form.cleaned_data.get('score'),
                                                 face_positions=form.cleaned_data['positions'],
@@ -83,10 +97,12 @@ class PhotoBlogViewSet(RestRequestHandler):
                                                 image=base64_code)
             new_blog.save()
 
-        return JsonResponse([*get_photo_info(new_blog)][0], safe=False, status=http.client.CREATED)
+        return JsonResponse([*get_photo_info(new_blog, attach_base)][0], safe=False, status=http.client.CREATED)
 
     def put(self, request, *args, **kwargs):
         params = json_request_compat(request)
+
+        attach_base = get_attach_base(request)
 
         form = PhotoUpdateForm(params)
         if not form.is_valid():
@@ -111,7 +127,7 @@ class PhotoBlogViewSet(RestRequestHandler):
                                            strip_string=False)
 
         blog.save()
-        return JsonResponse([*get_photo_info(blog)][0], safe=False)
+        return JsonResponse([*get_photo_info(blog, attach_base)][0], safe=False)
 
     def delete(self, request, *args, **kwargs):
         params = request.GET

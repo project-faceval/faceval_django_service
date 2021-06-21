@@ -32,14 +32,14 @@ def get_user_info(profile, user):
     }
 
 
-def get_photo_info(photo):
+def get_photo_info(photo, attach_base=False):
     if not isinstance(photo, Iterable):
         photo = [photo]
 
     for p in photo:
         yield {
             "id": p.id,
-            "base": p.image,
+            "base": p.image if attach_base else "",
             "score": p.score,
             "positions": p.face_positions,
             "title": p.title,
@@ -95,10 +95,26 @@ def remove_image(file_name):
     os.remove(image_path / file_name)
 
 
-def encode_image(multipart_file, ext):
+size = 300
+
+
+def encode_image(multipart_file, ext, compress: bool):
     path = save_image(multipart_file, ext)
 
     image = Image.open(path)
+
+    if compress:
+        width = image.size[0]
+        height = image.size[1]
+
+        if width > height:
+            new_height = 300
+            new_width = int(300 * width / height)
+        else:
+            new_width = 300
+            new_height = int(300 * height / width)
+
+        image = image.resize((new_width, new_height))
 
     buffer = BytesIO()
     image.save(buffer, format=ext)

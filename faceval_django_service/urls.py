@@ -23,5 +23,5 @@ urlpatterns = [
     # Faceval Customs
     path('user/', views.UserInfoViewSet().rest_view),
     path('auth/', views.AuthenticationViewSet().rest_view),
-    path('blog/', views.PhotoBlogViewSet().rest_view),
+    path('photo/', views.PhotoBlogViewSet().rest_view),
 ]

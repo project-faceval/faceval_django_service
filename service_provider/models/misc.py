@@ -39,3 +39,4 @@ class PhotoBlog(DateTimeRecordModel, TagContainedModel, FileSystemRelatedModel):
     class Meta:
         abstract = False
         db_table = "photo"
+        ordering = ['-date_added']
