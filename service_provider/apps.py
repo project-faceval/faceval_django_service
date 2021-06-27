@@ -5,7 +5,7 @@ from py_eureka_client import eureka_client
 
 ZONES = {
     "defaultZone": "http://127.0.0.1:9237/eureka",
-    # "nanjing-1": "http://127.0.0.1:9237/eureka",
+    # "nanjing-1": "http://127.0.0.1:9237/eureka",  # TODO: Hint: Register center info
 }
 
 ZONE = "defaultZone"
@@ -15,7 +15,7 @@ SERVICE_NAME = 'fv-service'
 
 
 def get_ip() -> str:
-    return '127.0.0.1'
+    return '127.0.0.1'  # TODO: Hint: Deployed server IP
 
 
 def get_port() -> int:
